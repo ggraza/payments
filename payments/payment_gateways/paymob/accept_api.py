@@ -1,5 +1,5 @@
 import json
-from typing import Any, Union, dict, list, tuple
+from typing import Any, Union
 
 import frappe
 import requests

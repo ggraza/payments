@@ -1,4 +1,4 @@
-from typing import Any, Union, dict, tuple
+from typing import Any
 
 import requests
 from frappe.utils.password import get_decrypted_password

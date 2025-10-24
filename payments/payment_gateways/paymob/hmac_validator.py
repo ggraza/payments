@@ -1,6 +1,6 @@
 import hashlib
 import hmac
-from typing import Any, dict
+from typing import Any
 
 import frappe
 
