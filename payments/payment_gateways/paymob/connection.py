@@ -1,9 +1,10 @@
-from typing import Any, Dict, Tuple, Union
+from typing import Any, Union, dict, tuple
 
 import requests
+from frappe.utils.password import get_decrypted_password
 from requests import HTTPError, JSONDecodeError, RequestException
 
-from .response_feedback_dataclass import ResponseFeedBack
+from .paymob_urls import PaymobUrls
 from .response_codes import (
 	HTTP_EXCEPTION,
 	HTTP_EXCEPTION_MESSAGE,
@@ -16,9 +17,7 @@ from .response_codes import (
 	UNHANDLED_EXCEPTION,
 	UNHANDLED_EXCEPTION_MESSAGE,
 )
-from frappe.utils.password import get_decrypted_password
-from .paymob_urls import PaymobUrls
-
+from .response_feedback_dataclass import ResponseFeedBack
 
 
 class AcceptConnection:
@@ -34,22 +33,22 @@ class AcceptConnection:
 		self.auth_token = self._get_auth_token()
 		self.session.headers.update(self._get_headers())
 
-	def _get_headers(self) -> Dict[str, Any]:
+	def _get_headers(self) -> dict[str, Any]:
 		"""Initialize Header for Requests
 
 		Returns:
-			Dict[str, Any]: Initialized Header Dict
+		        Dict[str, Any]: Initialized Header Dict
 		"""
 		return {
 			"Content-Type": "application/json",
 			"Authorization": f"{self.auth_token}",
 		}
 
-	def _get_auth_token(self) -> Union[str, None]:
+	def _get_auth_token(self) -> str | None:
 		"""Retrieve an Auth Token
 
 		Returns:
-			Union[str, None]: Auth Token
+		        Union[str, None]: Auth Token
 		"""
 		api_key = get_decrypted_password("Paymob Settings", "Paymob Settings", "api_key")
 		request_body = {"api_key": api_key}
@@ -64,20 +63,20 @@ class AcceptConnection:
 			token = feedback.data.get("token")
 		return token
 
-	def _process_request(self, call, *args, **kwargs) -> Tuple[str, Dict[str, Any], ResponseFeedBack]:
+	def _process_request(self, call, *args, **kwargs) -> tuple[str, dict[str, Any], ResponseFeedBack]:
 		"""Process the Request
 
 		Args:
-			call (Session.get/Session.post): Session.get/Session.post
-			*args, **kwargs: Same Args of requests.post/requests.get methods
+		        call (Session.get/Session.post): Session.get/Session.post
+		        *args, **kwargs: Same Args of requests.post/requests.get methods
 
 		Returns:
-			Tuple[str, Dict[str, Any], ResponseFeedBack]: Tuple containes the Following (Code, Data, Success/Error Message)
+		        Tuple[str, Dict[str, Any], ResponseFeedBack]: Tuple containes the Following (Code, Data, Success/Error Message)
 		"""
 
 		reponse_data = None
 		try:
-			response = call(timeout=90, *args, **kwargs)
+			response = call(*args, timeout=90, **kwargs)
 			reponse_data = response.json()
 			response.raise_for_status()
 		except JSONDecodeError as error:
@@ -115,24 +114,24 @@ class AcceptConnection:
 		)
 		return SUCCESS, reponse_feedback
 
-	def get(self, *args, **kwargs) -> Tuple[str, Dict[str, Any], ResponseFeedBack]:
+	def get(self, *args, **kwargs) -> tuple[str, dict[str, Any], ResponseFeedBack]:
 		"""Wrapper for requests.get method
 
 		Args:
-			Same Args of requests.post/requests.get methods
+		        Same Args of requests.post/requests.get methods
 
 		Returns:
-			Tuple[str, Dict[str, Any], ResponseFeedBack]: Tuple containes the Following (Code, Data, Success/Error Message)
+		        Tuple[str, Dict[str, Any], ResponseFeedBack]: Tuple containes the Following (Code, Data, Success/Error Message)
 		"""
-		return self._process_request(call=self.session.get, *args, **kwargs)
+		return self._process_request(*args, call=self.session.get, **kwargs)
 
-	def post(self, *args, **kwargs) -> Tuple[str, Dict[str, Any], ResponseFeedBack]:
+	def post(self, *args, **kwargs) -> tuple[str, dict[str, Any], ResponseFeedBack]:
 		"""Wrapper for requests.get method
 
 		Args:
-			Same Args of requests.post/requests.get methods
+		        Same Args of requests.post/requests.get methods
 
 		Returns:
-			Tuple[str, Dict[str, Any], ResponseFeedBack]: Tuple containes the Following (Code, Data, Success/Error Message)
+		        Tuple[str, Dict[str, Any], ResponseFeedBack]: Tuple containes the Following (Code, Data, Success/Error Message)
 		"""
-		return self._process_request(call=self.session.post, *args, **kwargs)
+		return self._process_request(*args, call=self.session.post, **kwargs)

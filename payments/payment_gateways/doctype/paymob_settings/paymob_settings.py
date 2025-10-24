@@ -1,19 +1,22 @@
 # Copyright (c) 2025, Frappe Technologies and contributors
 # For license information, please see license.txt
 
-import frappe
-from frappe.model.document import Document
-from frappe import _
-from payments.payment_gateways.paymob.accept_api import AcceptAPI
-from payments.payment_gateways.paymob.connection import AcceptConnection
-from payments.payment_gateways.paymob.paymob_urls import PaymobUrls
-from payments.payment_gateways.paymob.hmac_validator import HMACValidator
 from urllib.parse import urlencode
+
+import frappe
+from frappe import _
 from frappe.integrations.utils import (
 	create_request_log,
-
 )
+from frappe.model.document import Document
+
+from payments.payment_gateways.paymob.accept_api import AcceptAPI
+from payments.payment_gateways.paymob.connection import AcceptConnection
+from payments.payment_gateways.paymob.hmac_validator import HMACValidator
+from payments.payment_gateways.paymob.paymob_urls import PaymobUrls
 from payments.payment_gateways.paymob.response_codes import SUCCESS
+
+
 class PaymobSettings(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
@@ -31,13 +34,12 @@ class PaymobSettings(Document):
 		secret_key: DF.Password
 		token: DF.Password | None
 	# end: auto-generated types
-	
+
 	@frappe.whitelist()
 	def get_access_token(self):
 		accept = AcceptAPI()
 		token = accept.retrieve_auth_token()
 		return token
-	
 
 	def get_payment_url(self, **kwargs):
 		try:
@@ -55,13 +57,13 @@ class PaymobSettings(Document):
 				"first_name": kwargs.get("payer_name").split()[0],
 				"street": "NA",
 				"building": "NA",
-				"phone_number": "+201111111111",  
+				"phone_number": "+201111111111",
 				"shipping_method": "NA",
 				"postal_code": "NA",
 				"city": "Cairo",
 				"country": "EG",
 				"last_name": kwargs.get("payer_name").split()[-1],
-				"state": "NA"
+				"state": "NA",
 			}
 
 			payment_key_payload = {
@@ -70,7 +72,7 @@ class PaymobSettings(Document):
 				"expiration": 3600,
 				"order_id": kwargs.get("order_id"),
 				"currency": kwargs.get("currency", "EGP"),
-				"billing_data":billing_data,
+				"billing_data": billing_data,
 				"integration_id": self.payment_integration,
 			}
 
@@ -89,13 +91,10 @@ class PaymobSettings(Document):
 			frappe.log_error(frappe.get_traceback())
 			frappe.throw(_("Could not generate Paymob payment URL"))
 
-
-
 	def create_order(self, **kwargs):
-		
 		# Create integration log
 		integration_request = create_request_log(kwargs, service_name="Paymob")
-		connection=AcceptConnection()
+		connection = AcceptConnection()
 		paymob_urls = PaymobUrls()
 
 		# Get your API token
@@ -117,13 +116,13 @@ class PaymobSettings(Document):
 		}
 
 		try:
-			url=paymob_urls.get_url("order")
+			url = paymob_urls.get_url("order")
 			code, feedback = connection.post(url=url, json=payload)
 			if code != SUCCESS:
 				frappe.throw(_("Failed to create order in Paymob"))
-				
-			order=feedback.data
-			paymob_order_id=order.get('id')
+
+			order = feedback.data
+			paymob_order_id = order.get("id")
 
 			integration_request_dict = frappe.parse_json(integration_request.data)
 			integration_request_dict["paymob_order_id"] = str(paymob_order_id)
@@ -144,17 +143,14 @@ class PaymobSettings(Document):
 def callback():
 	try:
 		incoming_hmac = frappe.request.args.get("hmac") or frappe.request.form.get("hmac")
-		
+
 		if not incoming_hmac:
 			frappe.throw(_("Missing HMAC"))
 
 		incoming_data_json = frappe.request.get_json()
 
 		# Validate the HMAC
-		validator = HMACValidator(
-			incoming_hmac=incoming_hmac,
-			callback_dict=incoming_data_json
-		)
+		validator = HMACValidator(incoming_hmac=incoming_hmac, callback_dict=incoming_data_json)
 
 		if not validator.is_valid:
 			frappe.throw(_("Invalid HMAC"))
@@ -170,41 +166,45 @@ def callback():
 		paymob_order_id = obj_data.get("order", {}).get("id")
 
 		is_payment_successful = (
-			success is True and
-			pending is False and
-			str(payment_status).upper() == "PAID" and
-			str(txn_response_code).upper() == "APPROVED"
+			success is True
+			and pending is False
+			and str(payment_status).upper() == "PAID"
+			and str(txn_response_code).upper() == "APPROVED"
 		)
 
 		if not paymob_order_id:
 			frappe.throw(_("Missing order ID"))
 
-		integration_request_doc=get_integration_request(paymob_order_id)
+		integration_request_doc = get_integration_request(paymob_order_id)
 		integration_request_dict = frappe.parse_json(integration_request_doc.data)
 
-		integration_request_dict.update({
-			"paymob_payment_id": str(paymob_payment_id),
-			"order_id": str(paymob_order_id),
-		})
+		integration_request_dict.update(
+			{
+				"paymob_payment_id": str(paymob_payment_id),
+				"order_id": str(paymob_order_id),
+			}
+		)
 
 		integration_request_doc.data = frappe.as_json(integration_request_dict)
 
 		if is_payment_successful:
-			if capture_status =="CAPTURED":
-				integration_request_doc.status ="Completed"
-			
+			if capture_status == "CAPTURED":
+				integration_request_doc.status = "Completed"
+
 			integration_request_doc.save(ignore_permissions=True)
 			frappe.db.commit()
 
 			handle_payment_success(integration_request_dict)
-	
+
 		else:
-			integration_request_doc.error = f"Payment Status: {payment_status}, Response Code: {txn_response_code}"
+			integration_request_doc.error = (
+				f"Payment Status: {payment_status}, Response Code: {txn_response_code}"
+			)
 			integration_request_doc.save(ignore_permissions=True)
 			frappe.db.commit()
 			frappe.log_error(frappe.get_traceback(), "Paymob Payment not authorized")
 
-	except Exception as e:
+	except Exception:
 		frappe.log_error(frappe.get_traceback(), "Paymob Callback Error")
 
 
@@ -212,15 +212,15 @@ def get_integration_request(paymob_order_id):
 	"""Fetch Integration Request linked to Paymob order."""
 
 	integration_requests = frappe.get_all(
-			"Integration Request",
-			filters={
-				"integration_request_service": "Paymob",
-				"data": ["like", f'%\"paymob_order_id\": \"{paymob_order_id}\"%']
-			},
-			fields=["name", "data", "reference_doctype", "reference_docname"],
-			order_by="creation desc",
-			limit=1
-		)
+		"Integration Request",
+		filters={
+			"integration_request_service": "Paymob",
+			"data": ["like", f'%"paymob_order_id": "{paymob_order_id}"%'],
+		},
+		fields=["name", "data", "reference_doctype", "reference_docname"],
+		order_by="creation desc",
+		limit=1,
+	)
 	if not integration_requests:
 		frappe.throw(_("No Integration Request found for this order"))
 
@@ -230,15 +230,13 @@ def get_integration_request(paymob_order_id):
 def handle_payment_success(integration_request_dict):
 	"""Handle post-success payments"""
 
-	redirect_to=integration_request_dict['redirect_to']
-	if integration_request_dict['reference_doctype'] and integration_request_dict['reference_docname']:
+	redirect_to = integration_request_dict["redirect_to"]
+	if integration_request_dict["reference_doctype"] and integration_request_dict["reference_docname"]:
 		custom_redirect_to = None
 		try:
 			custom_redirect_to = frappe.get_doc(
-				integration_request_dict['reference_doctype'],
-				integration_request_dict['reference_docname']
+				integration_request_dict["reference_doctype"], integration_request_dict["reference_docname"]
 			).run_method("on_payment_authorized", "Completed")
-			
 
 		except Exception:
 			frappe.log_error(frappe.get_traceback())
@@ -246,15 +244,13 @@ def handle_payment_success(integration_request_dict):
 		if custom_redirect_to:
 			redirect_to = custom_redirect_to
 
-	redirect_url = (
-		f"payment-success?doctype={integration_request_dict['reference_doctype']}&docname={integration_request_dict['reference_docname']}"
-	)
+	redirect_url = f"payment-success?doctype={integration_request_dict['reference_doctype']}&docname={integration_request_dict['reference_docname']}"
 
 	if redirect_to:
 		redirect_url += "&" + urlencode({"redirect_to": redirect_to})
-	
+
 	return {"redirect_to": redirect_url, "status": "Completed"}
-		
+
 
 @frappe.whitelist()
 def update_paymob_settings(**kwargs):
@@ -263,15 +259,15 @@ def update_paymob_settings(**kwargs):
 		{
 			"api_key": args.get("api_key"),
 			"secret_key": args.get("secret_key"),
-			"public_key": args.get("public_key"), 
-			"hmac": args.get("hmac"), 
-			"iframe": args.get("iframe"), 
-			"payment_integration": args.get("payment_integration"), 
+			"public_key": args.get("public_key"),
+			"hmac": args.get("hmac"),
+			"iframe": args.get("iframe"),
+			"payment_integration": args.get("payment_integration"),
 		}
 	)
 	try:
 		paymob_settings = frappe.get_doc("Paymob Settings").update(fields)
 		paymob_settings.save()
 		return "Paymob Credentials Successfully"
-	except Exception as e:
+	except Exception:
 		return "Failed to Update Paymob Credentials"

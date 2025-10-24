@@ -1,13 +1,13 @@
-from typing import Any, Dict, List, Tuple, Union
+import json
+from typing import Any, Union, dict, list, tuple
+
 import frappe
 import requests
-import json
 
-from .paymob_urls import PaymobUrls
 from .connection import AcceptConnection
-
-from .response_feedback_dataclass import ResponseFeedBack
+from .paymob_urls import PaymobUrls
 from .response_codes import SUCCESS
+from .response_feedback_dataclass import ResponseFeedBack
 
 
 class AcceptAPI:
@@ -29,9 +29,7 @@ class AcceptAPI:
 		"""
 		return self.connection.auth_token
 
-	def create_payment_intent(
-		self, data: Dict
-	) -> Tuple[str, Union[Dict, None], ResponseFeedBack]:
+	def create_payment_intent(self, data: dict) -> tuple[str, dict | None, ResponseFeedBack]:
 		"""
 		Creates a Paymob Payment Intent
 		:param data: Dictionary containing payment intent details (refer to Paymob documentation)
@@ -56,16 +54,14 @@ class AcceptAPI:
 
 		return code, payment_intent, feedback
 
-	def retrieve_transaction(
-		self, transaction_id: int
-	) -> Tuple[str, Union[Dict, None], ResponseFeedBack]:
+	def retrieve_transaction(self, transaction_id: int) -> tuple[str, dict | None, ResponseFeedBack]:
 		"""Retrieves Transaction Data by Transaction ID
 
 		Args:
-			transaction_id (int): Paymob's Transaction ID
+		        transaction_id (int): Paymob's Transaction ID
 
 		Returns:
-			Tuple[str, Union[Dict, None], ResponseFeedBack]: (Code, Dict, ResponseFeedBack Instance)
+		        Tuple[str, Union[Dict, None], ResponseFeedBack]: (Code, Dict, ResponseFeedBack Instance)
 		"""
 		code, feedback = self.connection.get(
 			url=self.paymob_urls.get_url("retrieve_transaction", id=transaction_id)
@@ -73,9 +69,7 @@ class AcceptAPI:
 		transaction = None
 		if code == SUCCESS:
 			transaction = feedback.data
-			feedback.message = (
-				f"Transaction with id {transaction_id} retrieved Scuccessfully"
-			)
+			feedback.message = f"Transaction with id {transaction_id} retrieved Scuccessfully"
 		return code, transaction, feedback
 
 	def retrieve_iframe(self, iframe_id, payment_token):

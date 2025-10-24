@@ -1,5 +1,7 @@
 from dataclasses import dataclass
+
 import frappe
+
 
 @dataclass
 class PaymobUrls:
@@ -21,7 +23,9 @@ class PaymobUrls:
 	refund: str = "api/acceptance/void_refund/refund"
 	void: str = "api/acceptance/void_refund/void?token={token}"
 	retrieve_transaction: str = "api/acceptance/transactions/{id}"
-	retrieve_transactions: str = "api/acceptance/portal-transactions?page={from_page}&page_size={page_size}&token={token}"
+	retrieve_transactions: str = (
+		"api/acceptance/portal-transactions?page={from_page}&page_size={page_size}&token={token}"
+	)
 	loyalty_checkout: str = "api/acceptance/loyalty_checkout"
 	iframe: str = "api/acceptance/iframes/{iframe_id}?payment_token={payment_token}"
 	intention: str = "v1/intention/"

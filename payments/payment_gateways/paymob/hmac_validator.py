@@ -1,17 +1,19 @@
 import hashlib
 import hmac
-from typing import Any, Dict
-from .constants import AcceptCallbackTypes
+from typing import Any, dict
+
 import frappe
+
+from .constants import AcceptCallbackTypes
 
 
 class HMACValidator:
-	def __init__(self, incoming_hmac: str, callback_dict: Dict[str, Any], **kwargs) -> None:
+	def __init__(self, incoming_hmac: str, callback_dict: dict[str, Any], **kwargs) -> None:
 		"""Initialize HMAC Attributes
 
 		Args:
-			incoming_hmac (str): Incoming Paymob's HMAC
-			callback_dict Dict[str, Any]: Incoming Callback Dict
+		        incoming_hmac (str): Incoming Paymob's HMAC
+		        callback_dict Dict[str, Any]: Incoming Callback Dict
 		"""
 		self.incoming_hmac = incoming_hmac
 		self.callback_dict = callback_dict
@@ -25,10 +27,10 @@ class HMACValidator:
 		"""Calculates HMAC
 
 		Args:
-			message (str): GeneratedHMAC Message
+		        message (str): GeneratedHMAC Message
 
 		Returns:
-			str: Calculated HMAC
+		        str: Calculated HMAC
 		"""
 		hmac_secret = frappe.get_doc("Paymob Settings").get_password("hmac").encode("utf-8")
 		return (
@@ -42,14 +44,14 @@ class HMACValidator:
 		)
 
 	@classmethod
-	def _generate_processed_hmac(cls, hmac_dict: Dict[str, Any]) -> str:
+	def _generate_processed_hmac(cls, hmac_dict: dict[str, Any]) -> str:
 		"""Creates HMAC from sent self.callback_obj_dict
 
 		Args:
-			hmac_dict (Dict[str, Any]): Hmac Dict
+		        hmac_dict (Dict[str, Any]): Hmac Dict
 
 		Returns:
-			str: Generated HMAC
+		        str: Generated HMAC
 		"""
 		if not isinstance(hmac_dict, dict):
 			return ""
@@ -68,7 +70,7 @@ class HMACValidator:
 		"""Creates HMAC from sent transaction callback self.callback_obj_dict
 
 		Returns:
-			str: Generated HMAC
+		        str: Generated HMAC
 		"""
 		if not isinstance(self.callback_obj_dict, dict):
 			return ""
@@ -102,7 +104,7 @@ class HMACValidator:
 		"""Creates HMAC from sent card token callback body_dic
 
 		Returns:
-			str: Generated HMAC
+		        str: Generated HMAC
 		"""
 		if not isinstance(self.callback_obj_dict, dict):
 			return ""
@@ -124,7 +126,7 @@ class HMACValidator:
 		"""Creates HMAC from sent Delivery Status callback body_dic
 
 		Returns:
-			str: Generated HMAC
+		        str: Generated HMAC
 		"""
 		if not isinstance(self.callback_obj_dict, dict):
 			return ""
@@ -145,7 +147,7 @@ class HMACValidator:
 		"""Validates HMAC for processed callback
 
 		Returns:
-			bool: True if HMAC is Valid, False otherwise
+		        bool: True if HMAC is Valid, False otherwise
 		"""
 		if not isinstance(self.callback_dict, dict):
 			return False
