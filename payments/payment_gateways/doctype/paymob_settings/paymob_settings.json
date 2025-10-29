@@ -41,8 +41,7 @@
    "fieldname": "hmac",
    "fieldtype": "Password",
    "in_list_view": 1,
-   "label": "HMAC",
-   "reqd": 1
+   "label": "HMAC"
   },
   {
    "fieldname": "column_break_rdwp",
@@ -87,7 +86,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-10-22 14:04:07.307698",
+ "modified": "2025-10-30 01:14:02.729163",
  "modified_by": "Administrator",
  "module": "Payment Gateways",
  "name": "Paymob Settings",
