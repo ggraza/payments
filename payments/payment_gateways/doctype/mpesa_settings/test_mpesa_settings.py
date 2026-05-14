@@ -45,7 +45,7 @@ class TestMpesaSettings(PaymentsTestSuite):
 		)
 
 	def tearDown(self):
-		frappe.db.rollback()
+		super().tearDown()
 		for x in frappe.db.get_all("POS Opening Entry"):
 			frappe.get_doc("POS Opening Entry", x.name).cancel().delete()
 		frappe.db.sql("delete from `tabMpesa Settings`")
